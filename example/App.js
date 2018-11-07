@@ -8,18 +8,14 @@
 
 import React, { Component } from 'react';
 import { View, SafeAreaView, StyleSheet } from 'react-native';
-import Video from 'react-native-video';
+import Vplayer from 'react-native-vplayer';
 
 export default class App extends Component {
   render() {
     return (
       <SafeAreaView>
         <View style={styles.container}>
-          <Video 
-            style={styles.video}
-            source={require('./broadchurch.mp4')} 
-            controls
-          />
+          <Vplayer source={require('./broadchurch.mp4')} />
         </View>
       </SafeAreaView>
     );
@@ -31,10 +27,5 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     backgroundColor: '#F5FCFF',
-  },
-  video: {
-    marginTop: 50,
-    width: 375,
-    height: 250
   }
 });
