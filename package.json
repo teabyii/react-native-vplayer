@@ -1,0 +1,33 @@
+{
+  "name": "react-native-vplayer",
+  "version": "1.0.0",
+  "description": "A set of video player controls for the react-native-video component",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/teabyii/react-native-vplayer.git"
+  },
+  "keywords": [
+    "react",
+    "react-native",
+    "video",
+    "video-player",
+    "component",
+    "controls",
+    "react-native-video"
+  ],
+  "author": "teabyii <teabyii@gmail.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/teabyii/react-native-vplayer/issues"
+  },
+  "homepage": "https://github.com/teabyii/react-native-vplayer#readme",
+  "dependencies": {
+    "react": "^16.6.0-alpha.8af6728",
+    "react-native": "^0.57.4",
+    "react-native-video": "^3.2.1"
+  }
+}
