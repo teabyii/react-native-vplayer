@@ -13,9 +13,6 @@ module.exports = {
   resolver: {
     blacklistRE: blacklist([glob(`${path.resolve(__dirname, '..')}/node_modules/*`)]),
     providesModuleNodeModules: [...dependencies, ...devDependencies]
-    // extraNodeModules: {
-    //   '@babel/runtime': './'
-    // }
   },
 };
 

@@ -15,7 +15,10 @@ export default class App extends Component {
     return (
       <SafeAreaView>
         <View style={styles.container}>
-          <Vplayer source={require('./broadchurch.mp4')} />
+          <Vplayer
+            style={styles.player}
+            source={require('./broadchurch.mp4')}
+          />
         </View>
       </SafeAreaView>
     );
@@ -27,5 +30,9 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     backgroundColor: '#F5FCFF',
+  },
+  player: {
+    width: 375,
+    height: 250
   }
 });
