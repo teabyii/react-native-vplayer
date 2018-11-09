@@ -7,20 +7,21 @@
  */
 
 import React, { Component } from 'react';
-import { View, SafeAreaView, StyleSheet } from 'react-native';
+import { View, StyleSheet } from 'react-native';
 import Vplayer from 'react-native-vplayer';
+
+/* eslint-disable-next-line */
+console.disableYellowBox = true;
 
 export default class App extends Component {
   render() {
     return (
-      <SafeAreaView>
-        <View style={styles.container}>
-          <Vplayer
-            style={styles.player}
-            source={require('./broadchurch.mp4')}
-          />
-        </View>
-      </SafeAreaView>
+      <View style={styles.container}>
+        <Vplayer
+          style={styles.player}
+          source={require('./broadchurch.mp4')}
+        />
+      </View>
     );
   }
 }

@@ -5,7 +5,8 @@ import {
   Text,
   Image,
   StyleSheet,
-  TouchableOpacity
+  TouchableOpacity,
+  TouchableWithoutFeedback
 } from 'react-native';
 import Video from 'react-native-video';
 
@@ -42,6 +43,7 @@ const styles = StyleSheet.create({
     paddingLeft: 5,
     paddingRight: 5,
     backgroundColor: '#444',
+    zIndex: 1
   },
   buttonBase: {
     width: 45,
@@ -87,57 +89,122 @@ const styles = StyleSheet.create({
   }
 });
 
+function timeFormat(time = 0) {
+  const m = Math.round(time / 60).toFixed(0);
+
+  let s = Math.round(time % 60).toFixed(0);
+  s = s >= 10 ? s : `0${s}`;
+
+  return `${m}:${s}`;
+}
+
 // 全屏播放
 // 音量控制
 // 进度控制
 // 播放暂停控制
 export default class Vplayer extends Component {
+  static defaultProps = {
+    resizeMode: 'contain',
+    paused: true
+  }
+
   static propTypes = {
     source: PropTypes.any,
     style: PropTypes.any,
-    videoStyle: PropTypes.any
+    videoStyle: PropTypes.any,
+    resizeMode: PropTypes.string,
+    paused: PropTypes.bool
   }
 
   constructor(props) {
     super(props);
 
     this.state = {
+      paused: props.paused,
 
+      mute: false,
+      currentTime: 0,
+      remainingTime: 0,
     };
   }
 
+  onPlayOrPause = () => {
+    const { paused } = this.state;
+    this.setState({ paused: !paused });
+  }
+
+  onProgress = (e) => {
+    const { currentTime, seekableDuration } = e || { currentTime: 0, seekableDuration: 0 };
+    const remainingTime = seekableDuration - currentTime;
+
+    this.setState({
+      currentTime,
+      remainingTime
+    });
+  }
+
+  triggerVolume = () => {
+    const { mute } = this.state;
+    this.setState({ mute: !mute });
+  }
+
   renderSeekbar() {
+    const { currentTime, remainingTime } = this.state;
+    const fillWidth = (currentTime / (currentTime + remainingTime) * 100).toFixed(0);
+
     return (
       <View style={styles.seekbar}>
         <View style={styles.baseTrack} />
-        <View style={[styles.baseTrack, styles.fillTrack, { width: '30%' }]} />
-        <View style={[styles.seeker, { left: '30%' }]} />
+        <View style={[styles.baseTrack, styles.fillTrack, { width: `${fillWidth}%` }]} />
+        <View style={[styles.seeker, { left: `${fillWidth}%` }]} />
       </View>
     );
   }
 
   renderBottomControls() {
+    const {
+      paused,
+      currentTime,
+      remainingTime,
+    } = this.state;
+
     return (
       <View style={styles.bottom}>
-        <TouchableOpacity style={styles.buttonBase}>
-          <Image style={styles.icon} source={require('./assets/play.png')}/>
+        <TouchableOpacity style={styles.buttonBase} onPress={this.onPlayOrPause}>
+          {paused ? (
+            <Image style={styles.icon} source={require('./assets/play.png')}/>
+          ) : (
+            <Image style={styles.icon} source={require('./assets/pause.png')}/>
+          )}
         </TouchableOpacity>
-        <Text style={styles.trackText}>0:40</Text>
+        <Text style={styles.trackText}>{timeFormat(currentTime)}</Text>
         {this.renderSeekbar()}
-        <Text style={styles.trackText}>-0:07</Text>
+        <Text style={styles.trackText}>-{timeFormat(remainingTime)}</Text>
       </View>
     );
   }
 
   renderTopControls() {
+    const { mute } = this.state;
+
     return (
       <View style={styles.top}>
-        <TouchableOpacity style={[styles.buttonBase, styles.buttonBack]}>
+        <TouchableOpacity
+          style={[styles.buttonBase, styles.buttonBack]}
+          onPress={this.triggerExpand}
+        >
           <Image style={styles.icon} source={require('./assets/expand.png')}/>
         </TouchableOpacity>
 
-        <TouchableOpacity style={[styles.buttonBase, styles.buttonBack]}>
-          <Image style={styles.icon} source={require('./assets/volume-off.png')}/>
+        <TouchableOpacity
+          style={[styles.buttonBase, styles.buttonBack]}
+          onPress={this.triggerVolume}
+        >
+          {mute ? (
+            <Image style={styles.icon} source={require('./assets/volume-off.png')}/>
+          ) : (
+            <Image style={styles.icon} source={require('./assets/volume-up.png')}/>
+          )}
         </TouchableOpacity>
       </View>
     );
@@ -149,17 +216,27 @@ export default class Vplayer extends Component {
       style,
       videoStyle,
     } = this.props;
+    const {
+      paused,
+      mute
+    } = this.state;
 
     return (
-      <View style={[styles.container, style]}>
-        <Video
-          style={[styles.video, videoStyle]}
-          source={source}
-          controls
-        />
-        {this.renderTopControls()}
-        {this.renderBottomControls()}
-      </View>
+      <TouchableWithoutFeedback onPress={() => {}}>
+        <View style={[styles.container, style]}>
+          <Video
+            style={[styles.video, videoStyle]}
+            source={source}
+            paused={paused}
+            volume={mute ? 0.0 : 1.0}
+            repeat={true}
+            controls={false}
+            onProgress={this.onProgress}
+          />
+          {this.renderTopControls()}
+          {this.renderBottomControls()}
+        </View>
+      </TouchableWithoutFeedback>
     );
   }
 }
