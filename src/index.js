@@ -4,10 +4,11 @@ import {
   View,
   Text,
   Image,
+  Modal,
   StyleSheet,
   PanResponder,
   TouchableOpacity,
-  TouchableWithoutFeedback
+  TouchableWithoutFeedback,
 } from 'react-native';
 import Video from 'react-native-video';
 
@@ -16,6 +17,13 @@ const styles = StyleSheet.create({
     backgroundColor: '#000',
     justifyContent: 'space-between',
     overflow: "hidden"
+  },
+  fullscreen: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
   },
   video: {
     overflow: 'hidden',
@@ -130,11 +138,16 @@ export default class Vplayer extends Component {
       currentTime: 0,
       seeking: false,
       seekerOffset: 0,
+
+      fullscreen: false
     };
 
+    this.shouldReseek = false;
     this.seekerWidth = 0;
     this.seekerMoveStartOffset = 0;
     this.videoRef = null;
+    this.loaded = false;
+    this.loadedEvents = [];
     this.seekerPanResponder = this.getSeekerPanResponder();
   }
 
@@ -158,6 +171,18 @@ export default class Vplayer extends Component {
         this.videoRef.seek(currentTime);
       }
     })
+  }
+
+  pushLoadedEvent(callback) {
+    if (typeof callback !== 'function') {
+      return;
+    }
+
+    if (this.loaded) {
+      callback();
+    } else {
+      this.loadedEvents.push(callback);
+    }
   }
 
   setSeekerOffset(value = 0) {
@@ -184,9 +209,21 @@ export default class Vplayer extends Component {
     // error report
   }
 
+  onLoadStart = () => {
+    this.loaded = false; // reset
+  }
+
   onLoad = (data) => {
     const { duration } = data;
     this.setState({ duration });
+
+    // trigger loaded events
+    this.loaded = true;
+    const { loadedEvents } = this;
+    while(loadedEvents.length) {
+      const callback = loadedEvents.pop();
+      callback();
+    }
   }
 
   onProgress = (e) => {
@@ -210,6 +247,25 @@ export default class Vplayer extends Component {
   triggerVolume = () => {
     const { mute } = this.state;
     this.setState({ mute: !mute });
+  }
+
+  triggerExpand = () => {
+    const { fullscreen } = this.state;
+    this.shouldReseek = true;
+    this.setState({ fullscreen: !fullscreen }, () => {
+      this.loaded = false; // reset
+      this.seek(this.state.currentTime);
+    });
+  }
+
+  seek(time) {
+    // use `pushLoadedEvent` to make sure calling `seek` after `video.load`
+    // see: https://github.com/react-native-community/react-native-video#seek
+    this.pushLoadedEvent(() => {
+      if (this.videoRef) {
+        this.videoRef.seek(time, 0);
+      }
+    });
   }
 
   renderSeekbar() {
@@ -277,37 +333,60 @@ export default class Vplayer extends Component {
     );
   }
 
-  render() {
+  renderVideo() {
     const {
       source,
       style,
       videoStyle,
+      resizeMode
     } = this.props;
     const {
       paused,
       seeking,
-      mute
+      mute,
+      fullscreen
     } = this.state;
+
+    const viewStyle = fullscreen ? styles.fullscreen : style;
 
     return (
       <TouchableWithoutFeedback onPress={() => {}}>
-        <View style={[styles.container, style]}>
+        <View style={[styles.container, viewStyle]}>
           <Video
+            key={fullscreen ? 1 : 0}
             style={[styles.video, videoStyle]}
             source={source}
             paused={seeking || paused}
             volume={mute ? 0.0 : 1.0}
             repeat={true}
             controls={false}
+            onLoadStart={this.onLoadStart}
             onLoad={this.onLoad}
             onProgress={this.onProgress}
             ref={(ins) => this.videoRef = ins}
+            resizeMode={resizeMode}
           />
           {this.renderTopControls()}
           {this.renderBottomControls()}
         </View>
       </TouchableWithoutFeedback>
     );
+  }
+
+  render() {
+    const {
+      fullscreen
+    } = this.state;
+
+    if (fullscreen) {
+      return (
+        <Modal visible hardwareAccelerated onRequestClose={() => {}}>
+          {this.renderVideo()}
+        </Modal>
+      );
+    }
+
+    return this.renderVideo();
   }
 }
 
