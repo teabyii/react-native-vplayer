@@ -109,11 +109,23 @@ function timeFormat(time = 0) {
   return `${m}:${s}`;
 }
 
-// 全屏播放
-// 音量控制
-// 进度控制
-// 播放暂停控制
+/**
+ * A set of video player controls for the react-native-video component
+ *
+ * @export
+ * @class Vplayer
+ * @extends {Component}
+ */
 export default class Vplayer extends Component {
+  static assets = {
+    './assets/expand.png': require('./assets/expand.png'),
+    './assets/pause.png': require('./assets/pause.png'),
+    './assets/play.png': require('./assets/play.png'),
+    './assets/spinner.png': require('./assets/spinner.png'),
+    './assets/volume-off.png': require('./assets/volume-off.png'),
+    './assets/volume-up.png': require('./assets/volume-up.png')
+  }
+
   static defaultProps = {
     resizeMode: 'contain',
     paused: true
@@ -127,6 +139,12 @@ export default class Vplayer extends Component {
     paused: PropTypes.bool
   }
 
+  /**
+   * Creates an instance of Vplayer.
+   *
+   * @param {*} props
+   * @memberof Vplayer
+   */
   constructor(props) {
     super(props);
 
@@ -151,6 +169,22 @@ export default class Vplayer extends Component {
     this.seekerPanResponder = this.getSeekerPanResponder();
   }
 
+  resolveAsset(path) {
+    const { resolver } = this.props;
+
+    if (resolver) {
+      return resolver(path, Vplayer.assets[path]);
+    }
+
+    return Vplayer.assets[path];
+  }
+
+  /**
+   * Create seeker gesture responder
+   *
+   * @returns
+   * @memberof Vplayer
+   */
   getSeekerPanResponder() {
     return PanResponder.create({
       onStartShouldSetPanResponder: () => true,
@@ -173,6 +207,13 @@ export default class Vplayer extends Component {
     })
   }
 
+  /**
+   *
+   *
+   * @param {*} callback
+   * @returns
+   * @memberof Vplayer
+   */
   pushLoadedEvent(callback) {
     if (typeof callback !== 'function') {
       return;
@@ -185,6 +226,12 @@ export default class Vplayer extends Component {
     }
   }
 
+  /**
+   *
+   *
+   * @param {number} [value=0]
+   * @memberof Vplayer
+   */
   setSeekerOffset(value = 0) {
     // constrain
     if (value <= 0) {
@@ -202,6 +249,11 @@ export default class Vplayer extends Component {
     });
   }
 
+  /**
+   *
+   *
+   * @memberof Vplayer
+   */
   onSeekbarLayout = (e) => {
     if (e.nativeEvent && e.nativeEvent.layout) {
       this.seekerWidth = e.nativeEvent.layout.width - 10; //
@@ -209,10 +261,20 @@ export default class Vplayer extends Component {
     // error report
   }
 
+  /**
+   *
+   *
+   * @memberof Vplayer
+   */
   onLoadStart = () => {
     this.loaded = false; // reset
   }
 
+  /**
+   *
+   *
+   * @memberof Vplayer
+   */
   onLoad = (data) => {
     const { duration } = data;
     this.setState({ duration });
@@ -226,6 +288,11 @@ export default class Vplayer extends Component {
     }
   }
 
+  /**
+   *
+   *
+   * @memberof Vplayer
+   */
   onProgress = (e) => {
     const { seeking, duration } = this.state;
 
@@ -239,16 +306,31 @@ export default class Vplayer extends Component {
     }
   }
 
+  /**
+   *
+   *
+   * @memberof Vplayer
+   */
   triggerPlay = () => {
     const { paused } = this.state;
     this.setState({ paused: !paused });
   }
 
+  /**
+   *
+   *
+   * @memberof Vplayer
+   */
   triggerVolume = () => {
     const { mute } = this.state;
     this.setState({ mute: !mute });
   }
 
+  /**
+   *
+   *
+   * @memberof Vplayer
+   */
   triggerExpand = () => {
     const { fullscreen } = this.state;
     this.shouldReseek = true;
@@ -258,6 +340,12 @@ export default class Vplayer extends Component {
     });
   }
 
+  /**
+   *
+   *
+   * @param {*} time
+   * @memberof Vplayer
+   */
   seek(time) {
     // use `pushLoadedEvent` to make sure calling `seek` after `video.load`
     // see: https://github.com/react-native-community/react-native-video#seek
@@ -268,6 +356,12 @@ export default class Vplayer extends Component {
     });
   }
 
+  /**
+   *
+   *
+   * @returns
+   * @memberof Vplayer
+   */
   renderSeekbar() {
     const { seekerOffset } = this.state;
 
@@ -284,6 +378,12 @@ export default class Vplayer extends Component {
     );
   }
 
+  /**
+   *
+   *
+   * @returns
+   * @memberof Vplayer
+   */
   renderBottomControls() {
     const {
       paused,
@@ -295,9 +395,9 @@ export default class Vplayer extends Component {
       <View style={styles.bottom}>
         <TouchableOpacity style={styles.buttonBase} onPress={this.triggerPlay}>
           {paused ? (
-            <Image style={styles.icon} source={require('./assets/play.png')}/>
+            <Image style={styles.icon} source={this.resolveAsset('./assets/play.png')}/>
           ) : (
-            <Image style={styles.icon} source={require('./assets/pause.png')}/>
+            <Image style={styles.icon} source={this.resolveAsset('./assets/pause.png')}/>
           )}
         </TouchableOpacity>
         <Text style={styles.trackText}>{timeFormat(currentTime)}</Text>
@@ -307,6 +407,12 @@ export default class Vplayer extends Component {
     );
   }
 
+  /**
+   *
+   *
+   * @returns
+   * @memberof Vplayer
+   */
   renderTopControls() {
     const { mute } = this.state;
 
@@ -316,7 +422,7 @@ export default class Vplayer extends Component {
           style={[styles.buttonBase, styles.buttonBack]}
           onPress={this.triggerExpand}
         >
-          <Image style={styles.icon} source={require('./assets/expand.png')}/>
+          <Image style={styles.icon} source={this.resolveAsset('./assets/expand.png')}/>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -324,15 +430,21 @@ export default class Vplayer extends Component {
           onPress={this.triggerVolume}
         >
           {mute ? (
-            <Image style={styles.icon} source={require('./assets/volume-off.png')}/>
+            <Image style={styles.icon} source={this.resolveAsset('./assets/volume-off.png')}/>
           ) : (
-            <Image style={styles.icon} source={require('./assets/volume-up.png')}/>
+            <Image style={styles.icon} source={this.resolveAsset('./assets/volume-up.png')}/>
           )}
         </TouchableOpacity>
       </View>
     );
   }
 
+  /**
+   *
+   *
+   * @returns
+   * @memberof Vplayer
+   */
   renderVideo() {
     const {
       source,
@@ -373,6 +485,12 @@ export default class Vplayer extends Component {
     );
   }
 
+  /**
+   *
+   *
+   * @returns
+   * @memberof Vplayer
+   */
   render() {
     const {
       fullscreen
@@ -389,4 +507,3 @@ export default class Vplayer extends Component {
     return this.renderVideo();
   }
 }
-
