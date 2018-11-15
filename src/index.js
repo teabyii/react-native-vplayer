@@ -131,6 +131,7 @@ export default class Vplayer extends Component {
     resizeMode: 'contain',
     paused: true,
     controlTimeoutDelay: 5000,
+    repeat: false
   }
 
   static propTypes = {
@@ -163,7 +164,7 @@ export default class Vplayer extends Component {
       fullscreen: false
     };
 
-    this.shouldReseek = false;
+    this.firstLoaded = false;
     this.seekerWidth = 0;
     this.seekerMoveStartOffset = 0;
     this.videoRef = null;
@@ -212,7 +213,7 @@ export default class Vplayer extends Component {
       onPanResponderRelease: () => {
         const { currentTime } = this.state;
         this.setState({ seeking: false });
-        this.videoRef.seek(currentTime);
+        this.videoRef.seek(Math.floor(Number(currentTime)));
       }
     })
   }
@@ -289,6 +290,11 @@ export default class Vplayer extends Component {
     const { duration } = data;
     this.setState({ duration });
 
+    if (!this.firstLoaded && this.videoRef) {
+      this.videoRef.seek(0);
+      this.firstLoaded = true; // For loading first time
+    }
+
     // trigger loaded events
     this.loaded = true;
     const { loadedEvents } = this;
@@ -305,15 +311,27 @@ export default class Vplayer extends Component {
    */
   onProgress = (e) => {
     const { seeking, duration } = this.state;
+    const { currentTime } = e || { currentTime: 0 };
 
     if (!seeking) {
-      const { currentTime } = e || { currentTime: 0 };
       const seekerOffset = (currentTime / duration) * this.seekerWidth;
       this.setState({
         currentTime,
         seekerOffset
       });
     }
+  }
+
+  onEnd = () => {
+    const { repeat } = this.props;
+
+    if (this.videoRef) {
+      this.videoRef.seek(0);
+      // tricky
+      this.onProgress({ currentTime: 0 });
+    }
+
+    this.setState({ paused: !repeat });
   }
 
   /**
@@ -343,7 +361,6 @@ export default class Vplayer extends Component {
    */
   triggerExpand = () => {
     const { fullscreen } = this.state;
-    this.shouldReseek = true;
     this.setState({ fullscreen: !fullscreen }, () => {
       this.loaded = false; // reset
       this.seek(this.state.currentTime);
@@ -361,7 +378,7 @@ export default class Vplayer extends Component {
     // see: https://github.com/react-native-community/react-native-video#seek
     this.pushLoadedEvent(() => {
       if (this.videoRef) {
-        this.videoRef.seek(time, 0);
+        this.videoRef.seek(time);
       }
     });
   }
@@ -385,8 +402,6 @@ export default class Vplayer extends Component {
     } else {
       this.showControls();
     }
-
-    this.setState({ showControls: !showControls });
   }
 
   showControls() {
@@ -394,6 +409,7 @@ export default class Vplayer extends Component {
       this.opacityAminated,
       { toValue: 1 }
     ).start();
+    this.setState({ showControls: true });
     this.setControlTimeout();
   }
 
@@ -402,6 +418,7 @@ export default class Vplayer extends Component {
       this.opacityAminated,
       { toValue: 0 }
     ).start();
+    this.setState({ showControls: false });
     this.clearControlTimeout();
   }
 
@@ -527,11 +544,11 @@ export default class Vplayer extends Component {
             source={source}
             paused={seeking || paused}
             volume={mute ? 0.0 : 1.0}
-            repeat={true}
             controls={false}
             onLoadStart={this.onLoadStart}
             onLoad={this.onLoad}
             onProgress={this.onProgress}
+            onEnd={this.onEnd}
             ref={(ins) => this.videoRef = ins}
             resizeMode={resizeMode}
           />

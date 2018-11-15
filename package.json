@@ -1,6 +1,6 @@
 {
   "name": "react-native-vplayer",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "A set of video player controls for the react-native-video component",
   "main": "src/index.js",
   "scripts": {
