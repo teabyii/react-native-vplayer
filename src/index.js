@@ -6,6 +6,7 @@ import {
   Image,
   Modal,
   StyleSheet,
+  Animated,
   PanResponder,
   TouchableOpacity,
   TouchableWithoutFeedback,
@@ -128,7 +129,8 @@ export default class Vplayer extends Component {
 
   static defaultProps = {
     resizeMode: 'contain',
-    paused: true
+    paused: true,
+    controlTimeoutDelay: 5000,
   }
 
   static propTypes = {
@@ -157,6 +159,7 @@ export default class Vplayer extends Component {
       seeking: false,
       seekerOffset: 0,
 
+      showControls: false,
       fullscreen: false
     };
 
@@ -167,6 +170,13 @@ export default class Vplayer extends Component {
     this.loaded = false;
     this.loadedEvents = [];
     this.seekerPanResponder = this.getSeekerPanResponder();
+
+    this.opacityAminated = new Animated.Value(0);
+    this.controlTimeout = null;
+  }
+
+  componentWillUnmount() {
+    this.clearControlTimeout();
   }
 
   resolveAsset(path) {
@@ -356,6 +366,45 @@ export default class Vplayer extends Component {
     });
   }
 
+  setControlTimeout() {
+    const { controlTimeoutDelay } = this.props;
+    this.controlTimeout = setTimeout(() => {
+      this.hideControls();
+    }, controlTimeoutDelay)
+  }
+
+  clearControlTimeout() {
+    clearTimeout(this.controlTimeout);
+  }
+
+  toggleControls = () => {
+    const { showControls } = this.state;
+
+    if (showControls) {
+      this.hideControls();
+    } else {
+      this.showControls();
+    }
+
+    this.setState({ showControls: !showControls });
+  }
+
+  showControls() {
+    Animated.timing(
+      this.opacityAminated,
+      { toValue: 1 }
+    ).start();
+    this.setControlTimeout();
+  }
+
+  hideControls() {
+    Animated.timing(
+      this.opacityAminated,
+      { toValue: 0 }
+    ).start();
+    this.clearControlTimeout();
+  }
+
   /**
    *
    *
@@ -389,10 +438,13 @@ export default class Vplayer extends Component {
       paused,
       duration,
       currentTime,
+      showControls,
     } = this.state;
 
     return (
-      <View style={styles.bottom}>
+      <Animated.View
+        style={[styles.bottom, { opacity: this.opacityAminated }, { display: showControls ? 'flex' : 'none' }]}
+      >
         <TouchableOpacity style={styles.buttonBase} onPress={this.triggerPlay}>
           {paused ? (
             <Image style={styles.icon} source={this.resolveAsset('./assets/play.png')}/>
@@ -403,7 +455,7 @@ export default class Vplayer extends Component {
         <Text style={styles.trackText}>{timeFormat(currentTime)}</Text>
         {this.renderSeekbar()}
         <Text style={styles.trackText}>-{timeFormat(duration - currentTime)}</Text>
-      </View>
+      </Animated.View>
     );
   }
 
@@ -414,10 +466,15 @@ export default class Vplayer extends Component {
    * @memberof Vplayer
    */
   renderTopControls() {
-    const { mute } = this.state;
+    const {
+      mute,
+      showControls
+    } = this.state;
 
     return (
-      <View style={styles.top}>
+      <Animated.View
+        style={[styles.top, { opacity: this.opacityAminated }, { display: showControls ? 'flex' : 'none' }]}
+      >
         <TouchableOpacity
           style={[styles.buttonBase, styles.buttonBack]}
           onPress={this.triggerExpand}
@@ -435,7 +492,7 @@ export default class Vplayer extends Component {
             <Image style={styles.icon} source={this.resolveAsset('./assets/volume-up.png')}/>
           )}
         </TouchableOpacity>
-      </View>
+      </Animated.View>
     );
   }
 
@@ -462,7 +519,7 @@ export default class Vplayer extends Component {
     const viewStyle = fullscreen ? styles.fullscreen : style;
 
     return (
-      <TouchableWithoutFeedback onPress={() => {}}>
+      <TouchableWithoutFeedback onPress={this.toggleControls}>
         <View style={[styles.container, viewStyle]}>
           <Video
             key={fullscreen ? 1 : 0}
